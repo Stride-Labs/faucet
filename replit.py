@@ -1,11 +1,14 @@
+from replit import db
 import discord
 import os
 import requests
-import json
+from datetime import datetime
+
 
 
 
 client = discord.Client()
+WL = ["stride19uvw0azm9u0k6vqe4e22cga6kteskdqq3ulj6q"]
 
 @client.event
 async def on_ready():
@@ -15,7 +18,19 @@ async def on_ready():
 def microDenomToDenom(micro):
   return int(micro) / 10**6
 
-# http://stride-node3.testnet-vishal.stridenet.co:1317/cosmos/bank/v1beta1/balances/stride19uvw0azm9u0k6vqe4e22cga6kteskdqq3ulj6q/by_denom?denom=ustrd
+def rateLimit(address):
+  if address in WL:
+    return False
+  current_time = int(datetime.now().timestamp())
+  if address not in db:
+    db[address] = int(current_time)
+    return False
+  else:
+    last_call = db[address]
+    diff = current_time - last_call
+    if diff < 86397:
+      return True
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
@@ -46,13 +61,16 @@ async def on_message(message):
         await message.channel.send("Error: you must format your message as $faucet stride19uvw0azm9u0k6vqe4e22cga6kteskdqq3ulj6q, using your address")
         return
       # rate limit
-      
-      return
-      url = 'https://www.w3schools.com/python/demopage.php'
-      myobj = {'address': f'{addr}'}
-      x = requests.post(url, json = myobj)
-      msg = x.status_code
-      await message.channel.send(f'Sent 10_000 STRD to {addr}, {msg}')
+      limit = rateLimit(addr)
+      if limit:
+        await message.channel.send(f'Please wait 24 hours to use the faucet')
+        return
+      else:
+        url = 'https://www.w3schools.com/python/demopage.php'
+        myobj = {'address': f'{addr}'}
+        x = requests.post(url, json = myobj)
+        msg = x.status_code
+        await message.channel.send(f'Sent 10_000 STRD to {addr}, {msg}')
 
 my_secret = os.environ['TOKEN']
 client.run(my_secret)
