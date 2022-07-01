@@ -13,6 +13,8 @@ WL = ["stride19uvw0azm9u0k6vqe4e22cga6kteskdqq3ulj6q"]
 async def on_ready():
     print('We have logged in as {0.user}'.format(client))
 
+def callsKey(address):
+    return f"{address}-faucet-calls"
 
 def microDenomToDenom(micro):
   return int(micro) / 10**6
@@ -32,10 +34,16 @@ def rateLimit(address):
 
 ustrd_denom = "ustrd"
 ibc_denom = "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
+instructions = f'Query your balance or request tokens, every 24 hours. Commands are \n\t $balance <address> \n\t $faucet <address>'
 
 @client.event
 async def on_message(message):
     if message.author == client.user:
+        return
+
+    parts = message.content.split(" ")
+    if len(parts) != 2:
+        await message.channel.send(instructions)
         return
 
     if message.content.startswith('$balance'):
@@ -79,12 +87,15 @@ async def on_message(message):
             x = requests.post(url, json = myobj)
             msg = x.status_code
             if msg == 200:
+                if callsKey(addr) not in db:
+                    db[callsKey(addr)] = 0
+                db[callsKey(addr)] += 1
                 await message.channel.send(f'Sent 10 STRD and 10 ATOM to {addr}, {msg}')
             else:
                 print(x)
                 await message.channel.send(f'Failed to send STRD, the faucet might be down or you\'ve hit your faucet limit.')
     else:
-        await message.channel.send(f'Query your balance or request tokens, every 24 hours. Commands are \n\t $balance <address> \n\t $faucet <address>')
+        await message.channel.send(instructions)
 
 my_secret = os.environ['TOKEN']
 client.run(my_secret)
