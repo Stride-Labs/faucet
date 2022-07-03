@@ -5,9 +5,8 @@ import requests
 from datetime import datetime
 
 
-
 client = discord.Client()
-WL = ["stride19uvw0azm9u0k6vqe4e22cga6kteskdqq3ulj6q"]
+WL = ['808561220055334913', '383816391519633419']
 
 @client.event
 async def on_ready():
@@ -19,17 +18,19 @@ def callsKey(address):
 def microDenomToDenom(micro):
   return int(micro) / 10**6
 
-def rateLimit(address):
-    if address in WL:
+def rateLimit(user_id):
+    if user_id in WL:
         return False
     current_time = int(datetime.now().timestamp())
-    if address not in db:
-        db[address] = int(current_time)
+    if user_id not in db:
+        db[user_id] = int(current_time)
         return False
     else:
-        last_call = db[address]
+        last_call = db[user_id]
         diff = current_time - last_call
         if diff < 86397:
+            # reset the time
+            db[user_id] = int(current_time)
             return True
 
 ustrd_denom = "ustrd"
@@ -40,6 +41,8 @@ instructions = f'Query your balance or request tokens, every 24 hours. Commands 
 async def on_message(message):
     if message.author == client.user:
         return
+
+    user_id = str(message.author.id)
 
     parts = message.content.split(" ")
     if len(parts) != 2:
@@ -76,7 +79,7 @@ async def on_message(message):
             await message.channel.send("Error: you must format your message as $faucet stride19uvw0azm9u0k6vqe4e22cga6kteskdqq3ulj6q, using your address")
             return
         # rate limit
-        limit = rateLimit(addr)
+        limit = rateLimit(user_id)
         if limit:
             await message.channel.send(f'Please wait 24 hours to use the faucet')
             return
